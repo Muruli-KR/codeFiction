@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Sign Up — Advanced Result Analytics Suite</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+    <style>
+        :root { --bg:#0a0f1e; --card:#111827; --border:#1e2d45; --t1:#e2e8f0; --tm:#94a3b8; --a1:#3b82f6; --a2:#8b5cf6; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--t1); min-height:100vh; display:flex; align-items:center; justify-content:center; overflow-x:hidden; padding:2rem 1rem; }
+        .blob { position:fixed; border-radius:50%; filter:blur(80px); opacity:.12; pointer-events:none; animation:fl 8s ease-in-out infinite; }
+        .b1 { width:500px;height:500px;background:#8b5cf6;top:-150px;right:-100px; }
+        .b2 { width:400px;height:400px;background:#3b82f6;bottom:-120px;left:-80px;animation-delay:3s; }
+        @keyframes fl { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-25px)} }
+        .wrapper { position:relative;z-index:10;width:100%;max-width:540px; }
+        .card {
+            background:rgba(17,24,39,.9); border:1px solid var(--border);
+            border-radius:24px; padding:2rem 2.5rem;
+            backdrop-filter:blur(20px); box-shadow:0 25px 80px rgba(0,0,0,.5);
+            animation:fu .6s ease both;
+        }
+        @keyframes fu { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+        .header { text-align:center; margin-bottom:2rem; }
+        .logo-icon { width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:.75rem;box-shadow:0 8px 25px rgba(139,92,246,.4); }
+        .logo-title { font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,#8b5cf6,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent; }
+        .logo-sub { font-size:.8rem;color:var(--tm);margin-top:.2rem; }
+        .lbl { font-size:.75rem;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.35rem;display:block; }
+        .inp, .sel {
+            background:rgba(255,255,255,.05)!important; border:1px solid var(--border)!important;
+            color:var(--t1)!important; border-radius:10px!important; padding:.6rem .9rem!important;
+            font-size:.875rem!important; width:100%; appearance:auto;
+            transition:border-color .2s,box-shadow .2s!important;
+        }
+        .inp:focus, .sel:focus { border-color:var(--a1)!important; box-shadow:0 0 0 3px rgba(59,130,246,.2)!important; outline:none!important; }
+        .inp::placeholder { color:#475569!important; }
+        .sel option { background:#1a2236; color:var(--t1); }
+        .role-selector { display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1rem; }
+        .role-opt { display:none; }
+        .role-label {
+            border:2px solid var(--border); border-radius:12px; padding:1rem .75rem;
+            text-align:center; cursor:pointer; transition:all .2s;
+            background:rgba(255,255,255,.03);
+        }
+        .role-label:hover { border-color:var(--a1); background:rgba(59,130,246,.08); }
+        .role-opt:checked + .role-label { border-color:var(--a1); background:rgba(59,130,246,.15); box-shadow:0 0 0 2px rgba(59,130,246,.3); }
+        .role-icon { font-size:1.6rem; margin-bottom:.4rem; }
+        .role-name { font-size:.8rem; font-weight:600; }
+        .role-desc { font-size:.68rem; color:var(--tm); margin-top:.2rem; }
+        .btn-signup { width:100%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);border:none;color:#fff;font-weight:700;font-size:.95rem;padding:.8rem;border-radius:12px;cursor:pointer;transition:all .2s; }
+        .btn-signup:hover { opacity:.9;transform:translateY(-1px);box-shadow:0 8px 30px rgba(139,92,246,.4); }
+        hr.div { border:none;border-top:1px solid var(--border);margin:1.25rem 0; }
+        .llink { text-align:center;font-size:.875rem;color:var(--tm); }
+        .llink a { color:var(--a1);font-weight:600;text-decoration:none; }
+        .llink a:hover { text-decoration:underline; }
+        .alert-err { background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:10px;padding:.75rem 1rem;font-size:.85rem;margin-bottom:1rem; }
+        .alert-suc { background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#6ee7b7;border-radius:10px;padding:.75rem 1rem;font-size:.85rem;margin-bottom:1rem; }
+        .row-grid { display:grid;grid-template-columns:1fr 1fr;gap:1rem; }
+        @media(max-width:480px){ .row-grid{grid-template-columns:1fr;} .role-selector{grid-template-columns:1fr;} }
+        .section-head { font-size:.7rem;font-weight:700;color:var(--a1);text-transform:uppercase;letter-spacing:1px;margin:1.25rem 0 .75rem; }
+    </style>
+</head>
+<body>
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="wrapper">
+    <div class="card">
+        <div class="header">
+            <div class="logo-icon">📝</div>
+            <div class="logo-title">Create Account</div>
+            <div class="logo-sub">Join the Result Analytics Platform</div>
+        </div>
+
+        {% for message in messages %}
+        <div class="{% if message.tags == 'success' %}alert-suc{% else %}alert-err{% endif %}">{{ message }}</div>
+        {% endfor %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="section-head">Choose Your Role</div>
+            <div class="role-selector">
+                <div>
+                    <input type="radio" name="role" value="admin" id="r_admin" class="role-opt" {% if form.role.value == 'admin' %}checked{% endif %}>
+                    <label for="r_admin" class="role-label">
+                        <div class="role-icon">🛡️</div>
+                        <div class="role-name">Admin</div>
+                        <div class="role-desc">Full access</div>
+                    </label>
+                </div>
+                <div>
+                    <input type="radio" name="role" value="teacher" id="r_teacher" class="role-opt" {% if form.role.value == 'teacher' %}checked{% endif %}>
+                    <label for="r_teacher" class="role-label">
+                        <div class="role-icon">👨‍🏫</div>
+                        <div class="role-name">Teacher</div>
+                        <div class="role-desc">Upload & view</div>
+                    </label>
+                </div>
+                <div>
+                    <input type="radio" name="role" value="student" id="r_student" class="role-opt" {% if form.role.value == 'student' %}checked{% endif %} checked>
+                    <label for="r_student" class="role-label">
+                        <div class="role-icon">🎓</div>
+                        <div class="role-name">Student</div>
+                        <div class="role-desc">View results</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="section-head">Account Details</div>
+            <div class="row-grid mb-3">
+                <div>
+                    <label class="lbl">First Name</label>
+                    <input type="text" name="first_name" class="inp" placeholder="First name" value="{{ form.first_name.value|default:'' }}">
+                </div>
+                <div>
+                    <label class="lbl">Last Name</label>
+                    <input type="text" name="last_name" class="inp" placeholder="Last name" value="{{ form.last_name.value|default:'' }}">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="lbl">Username *</label>
+                <input type="text" name="username" class="inp" placeholder="Choose a username" required value="{{ form.username.value|default:'' }}">
+            </div>
+            <div class="mb-3">
+                <label class="lbl">Email</label>
+                <input type="email" name="email" class="inp" placeholder="Email address" value="{{ form.email.value|default:'' }}">
+            </div>
+            <div class="row-grid mb-3">
+                <div>
+                    <label class="lbl">Password *</label>
+                    <input type="password" name="password" class="inp" placeholder="Password" required>
+                </div>
+                <div>
+                    <label class="lbl">Confirm Password *</label>
+                    <input type="password" name="confirm_password" class="inp" placeholder="Confirm password" required>
+                </div>
+            </div>
+
+            <div class="section-head">Optional Info</div>
+            <div class="row-grid mb-4">
+                <div>
+                    <label class="lbl">Department</label>
+                    <input type="text" name="department" class="inp" placeholder="e.g. Science" value="{{ form.department.value|default:'' }}">
+                </div>
+                <div>
+                    <label class="lbl">Class</label>
+                    <input type="text" name="student_class" class="inp" placeholder="e.g. 10-A" value="{{ form.student_class.value|default:'' }}">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-signup">
+                <i class="bi bi-person-plus"></i> Create Account
+            </button>
+        </form>
+
+        <hr class="div"/>
+        <div class="llink">Already have an account? <a href="/">Sign in →</a></div>
+    </div>
+</div>
+</body>
+</html>
