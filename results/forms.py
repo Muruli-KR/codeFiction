@@ -62,8 +62,11 @@ class LoginForm(AuthenticationForm):
     )
 
 
-class UploadForm(forms.Form):
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+class CSVUploadForm(forms.Form):
     file = forms.FileField(
-        widget=forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': '.csv,.xlsx,.xls'}),
-        label='Upload CSV or Excel File'
+        widget=MultipleFileInput(attrs={'class': 'form-control', 'multiple': True}),
+        label="Select CSV/Excel files"
     )

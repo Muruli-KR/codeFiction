@@ -1,0 +1,165 @@
+{% extends 'results/base.html' %}
+
+{% block title %}My Results — Advanced Result Analytics{% endblock %}
+
+{% block content %}
+<div class="fade-up mb-4">
+    <h3 style="font-weight: 800; letter-spacing: -0.5px;">Student Performance</h3>
+    <p class="text-muted mb-0" style="font-size: 0.9rem;">View your detailed subject-wise marks and status</p>
+</div>
+
+{% if not student %}
+<div class="glass-card mt-4 fade-up-2">
+    <div class="empty-state">
+        <i class="bi bi-person-x"></i>
+        <h4>No Records Found</h4>
+        <p>We couldn't find any results linked to your account. This might be because your results haven't been uploaded yet, or your account name doesn't match the name in the results database.</p>
+        <p class="text-muted mt-2" style="font-size: 0.8rem;">Please contact your teacher or administrator.</p>
+    </div>
+</div>
+{% else %}
+
+<div class="row g-4 mb-4 fade-up-2">
+    <!-- Student Info Card -->
+    <div class="col-lg-4">
+        <div class="glass-card p-4 h-100 d-flex flex-column justify-content-center align-items-center text-center">
+            <div class="mb-3" style="width: 80px; height: 80px; background: var(--grad1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; box-shadow: 0 10px 25px rgba(59,130,246,0.3);">
+                🎓
+            </div>
+            <h4 style="font-weight: 700; color: white; margin-bottom: 0.2rem;">{{ student.name }}</h4>
+            <div class="mb-3 d-flex gap-2 justify-content-center flex-wrap">
+                <span class="badge" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border);">{{ student.gender }}</span>
+                <span class="badge" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border);">{{ student.category }}</span>
+                <span class="badge" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border);">{{ student.quota }} Quota</span>
+            </div>
+            
+            <div style="width: 100%; border-top: 1px solid var(--border); margin: 1rem 0;"></div>
+            
+            <div class="w-100 text-start">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted text-uppercase" style="font-size:0.75rem; font-weight:600;">Total Marks</span>
+                    <span style="font-weight: 700; color: var(--accent1);">{{ total_marks }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted text-uppercase" style="font-size:0.75rem; font-weight:600;">Subjects Passed</span>
+                    <span style="font-weight: 700; color: #34d399;">{{ pass_count }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted text-uppercase" style="font-size:0.75rem; font-weight:600;">Subjects Failed</span>
+                    <span style="font-weight: 700; color: #f87171;">{{ fail_count }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chart Card -->
+    <div class="col-lg-8">
+        <div class="glass-card p-4 h-100">
+            <div class="section-title"><i class="bi bi-bar-chart-line"></i> Performance Chart</div>
+            <div id="chartData" class="d-none">
+                {% for r in results %}
+                <span class="result-data" data-subject="{{ r.subject }}" data-marks="{{ r.marks }}"></span>
+                {% endfor %}
+            </div>
+            <div class="chart-wrap">
+                <canvas id="studentMarksChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4 fade-up-3">
+    <div class="col-12">
+        <div class="glass-card p-4">
+            <div class="section-title"><i class="bi bi-card-checklist"></i> Subject Details</div>
+            
+            {% if not results %}
+            <div class="alert-dark text-center py-4">No subjects found for this student.</div>
+            {% else %}
+            <div class="table-container">
+                <table class="table-dark-custom">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Marks Obtained</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in results %}
+                        <tr>
+                            <td style="font-weight: 500;">{{ r.subject }}</td>
+                            <td>{{ r.marks }}</td>
+                            <td>
+                                {% if r.passed %}
+                                <span class="badge-pass">Pass</span>
+                                {% else %}
+                                <span class="badge-fail">Fail</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if student and results %}
+<script>
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = 'Inter';
+
+    const ctx = document.getElementById('studentMarksChart').getContext('2d');
+    
+    // Read data from DOM to prevent IDE syntax errors
+    const labels = [];
+    const dataVals = [];
+    document.querySelectorAll('.result-data').forEach(function(el) {
+        labels.push(el.dataset.subject);
+        dataVals.push(parseFloat(el.dataset.marks));
+    });
+    
+    const bgColors = dataVals.map(mark => mark >= 40 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)');
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Marks',
+                data: dataVals,
+                backgroundColor: bgColors,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    border: { display: false }
+                },
+                x: {
+                    grid: { display: false },
+                    border: { display: false }
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

@@ -8,56 +8,86 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
     <style>
-        :root { --bg:#0a0f1e; --card:#111827; --border:#1e2d45; --t1:#e2e8f0; --tm:#94a3b8; --a1:#3b82f6; --a2:#8b5cf6; }
-        * { box-sizing:border-box; margin:0; padding:0; }
-        body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--t1); min-height:100vh; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-        .blob { position:fixed; border-radius:50%; filter:blur(80px); opacity:.15; pointer-events:none; animation:fl 8s ease-in-out infinite; }
-        .b1 { width:500px;height:500px;background:#3b82f6;top:-150px;left:-100px; }
-        .b2 { width:400px;height:400px;background:#8b5cf6;bottom:-120px;right:-80px;animation-delay:3s; }
-        @keyframes fl { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-30px)} }
-        .wrapper { position:relative;z-index:10;width:100%;max-width:420px;padding:1rem; }
+        :root { 
+            --bg-dark: #050810; 
+            --card: rgba(17,24,39,0.4); 
+            --border: rgba(255,255,255,0.08); 
+            --t1: #e2e8f0; --tm: #94a3b8; 
+            --a1: #3b82f6; --a2: #8b5cf6; 
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-dark); color: var(--t1); 
+            min-height: 100vh; display: flex; align-items: center; justify-content: center; 
+            overflow: hidden; position: relative; 
+        }
+        
+        /* Interactive Background */
+        .interactive-bg {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: -1;
+            background: radial-gradient(circle 800px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.03), transparent 80%);
+            transition: background 0.15s ease-out;
+        }
+        canvas#stars { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -3; }
+
+        .blob { position:fixed; border-radius:50%; filter:blur(100px); opacity:.15; pointer-events:none; animation:fl 10s ease-in-out infinite alternate; z-index:-2; }
+        .b1 { width:500px;height:500px;background:#3b82f6;top:-100px;left:-100px; }
+        .b2 { width:400px;height:400px;background:#8b5cf6;bottom:-100px;right:-50px;animation-delay:-5s; }
+        @keyframes fl { 0% {transform:translateY(0) scale(1)} 100% {transform:translateY(-50px) scale(1.1)} }
+        
+        .wrapper { position:relative;z-index:10;width:100%;max-width:480px;padding:1rem; }
         .card {
-            background:rgba(17,24,39,.9); border:1px solid var(--border); border-radius:24px;
-            padding:2.5rem; backdrop-filter:blur(20px);
-            box-shadow:0 25px 80px rgba(0,0,0,.5);
+            background: var(--card); border:1px solid var(--border); border-radius:24px;
+            padding:3rem 2.5rem; backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+            box-shadow:0 15px 50px rgba(0,0,0,0.5);
             animation:fu .6s ease both;
         }
         @keyframes fu { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
-        .logo { display:flex;flex-direction:column;align-items:center;margin-bottom:2rem; }
-        .logo-icon { width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin-bottom:1rem;box-shadow:0 8px 30px rgba(59,130,246,.4); }
-        .logo-title { font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent; }
-        .logo-sub { font-size:.8rem;color:var(--tm);margin-top:.2rem; }
-        .lbl { font-size:.75rem;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem;display:block; }
+        
+        .logo { display:flex;flex-direction:column;align-items:center;margin-bottom:2.5rem; }
+        .logo-icon { width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:2rem;color:white;margin-bottom:1rem;box-shadow:0 8px 30px rgba(59,130,246,.4); }
+        .logo-title { font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center; }
+        .logo-sub { font-size:.85rem;color:var(--tm);margin-top:.4rem;text-align:center; }
+        
+        .lbl { font-size:.85rem;font-weight:600;color:var(--t1);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;display:block; }
         .inp {
-            background:rgba(255,255,255,.05)!important; border:1px solid var(--border)!important;
-            color:var(--t1)!important; border-radius:10px!important; padding:.65rem 1rem .65rem 2.4rem!important;
-            font-size:.9rem!important; width:100%;
-            transition:border-color .2s,box-shadow .2s!important;
+            background: rgba(255,255,255,.05)!important; border:1px solid var(--border)!important;
+            color:var(--t1)!important; border-radius:12px!important; padding:.75rem 1rem .75rem 2.6rem!important;
+            font-size:1rem!important; width:100%;
+            transition:border-color .2s,box-shadow .2s,background .2s!important;
         }
-        .inp:focus { border-color:var(--a1)!important; box-shadow:0 0 0 3px rgba(59,130,246,.2)!important; outline:none!important; }
+        .inp:focus { border-color:var(--a1)!important; box-shadow:0 0 0 3px rgba(59,130,246,.2)!important; background:rgba(255,255,255,0.08)!important; outline:none!important; }
         .inp::placeholder { color:#475569!important; }
         .ig { position:relative; }
         .ig i { position:absolute;left:.9rem;top:50%;transform:translateY(-50%);color:var(--tm);font-size:.9rem;z-index:5; }
-        .btn-login { width:100%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;font-weight:700;font-size:.95rem;padding:.8rem;border-radius:12px;cursor:pointer;transition:all .2s; }
-        .btn-login:hover { opacity:.9;transform:translateY(-1px);box-shadow:0 8px 30px rgba(59,130,246,.45); }
+        
+        .btn-login { width:100%;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;font-weight:700;font-size:.95rem;padding:.8rem;border-radius:12px;cursor:pointer;transition:all .2s; box-shadow:0 4px 15px rgba(59,130,246,.25); }
+        .btn-login:hover { transform:translateY(-2px);box-shadow:0 8px 25px rgba(59,130,246,.4); }
+        
         hr.div { border:none;border-top:1px solid var(--border);margin:1.5rem 0; }
         .slink { text-align:center;font-size:.875rem;color:var(--tm); }
         .slink a { color:var(--a1);font-weight:600;text-decoration:none; }
         .slink a:hover { text-decoration:underline; }
+        
         .alert-err { background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:10px;padding:.75rem 1rem;font-size:.85rem;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem; }
         .alert-suc { background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#6ee7b7;border-radius:10px;padding:.75rem 1rem;font-size:.85rem;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem; }
+        
         .roles { display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-top:1.5rem; }
-        .rfeat { background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:.6rem .5rem;text-align:center; }
+        .rfeat { background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:10px;padding:.6rem .5rem;text-align:center;transition:background .2s; }
+        .rfeat:hover { background:rgba(255,255,255,.05); }
         .rfeat-lbl { font-size:.7rem;color:var(--tm);margin-top:.2rem; }
     </style>
 </head>
 <body>
+<canvas id="stars"></canvas>
 <div class="blob b1"></div>
 <div class="blob b2"></div>
+<div class="interactive-bg" id="interactiveBg"></div>
 <div class="wrapper">
     <div class="card">
         <div class="logo">
-            <div class="logo-icon">📊</div>
+            <div class="logo-icon"><i class="bi bi-hexagon-fill"></i></div>
             <div class="logo-title">Result Analytics Suite</div>
             <div class="logo-sub">Advanced Student Performance Platform</div>
         </div>
@@ -84,13 +114,88 @@
         <hr class="div"/>
         <div class="slink">Don't have an account? <a href="/signup/">Create one →</a></div>
         <div class="roles">
-            <div class="rfeat"><div style="font-size:1.2rem">🛡️</div><div class="rfeat-lbl">Admin</div></div>
-            <div class="rfeat"><div style="font-size:1.2rem">👨‍🏫</div><div class="rfeat-lbl">Teacher</div></div>
-            <div class="rfeat"><div style="font-size:1.2rem">🎓</div><div class="rfeat-lbl">Student</div></div>
+            <div class="rfeat"><div style="font-size:1.4rem;color:#8b5cf6;"><i class="bi bi-person-workspace"></i></div><div class="rfeat-lbl">Teacher</div></div>
         </div>
     </div>
 </div>
 <script>
+document.addEventListener('mousemove', (e) => {
+    document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
+    document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
+    mx = e.clientX;
+    my = e.clientY;
+});
+
+// Constellation Background Script
+const canvas = document.getElementById('stars');
+const ctx = canvas.getContext('2d');
+let width, height, stars = [];
+let mx = 0, my = 0;
+
+function initCanvas() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    stars = [];
+    // More dense constellation
+    const numStars = Math.floor((width * height) / 6000);
+    for(let i=0; i<numStars; i++) {
+        stars.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            r: Math.random() * 1.8 + 0.5,
+            dx: (Math.random() - 0.5) * 0.4,
+            dy: (Math.random() - 0.5) * 0.4,
+            hue: Math.random() > 0.8 ? (Math.random() > 0.5 ? 210 : 260) : 0 // Some blue/purple stars
+        });
+    }
+}
+
+function animateStars() {
+    ctx.clearRect(0, 0, width, height);
+    for(let i=0; i<stars.length; i++) {
+        let s = stars[i];
+        
+        // Mouse interaction - pull stars in
+        let dist = Math.hypot(mx - s.x, my - s.y);
+        if(dist < 250) {
+            s.x += (mx - s.x) * 0.02;
+            s.y += (my - s.y) * 0.02;
+        }
+
+        s.x += s.dx; s.y += s.dy;
+        
+        if(s.x < 0 || s.x > width) s.dx = -s.dx;
+        if(s.y < 0 || s.y > height) s.dy = -s.dy;
+        
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        if(s.hue > 0) {
+            ctx.fillStyle = `hsla(${s.hue}, 70%, 70%, 0.6)`;
+        } else {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+        }
+        ctx.fill();
+        
+        // Connect stars - larger radius
+        for(let j=i+1; j<stars.length; j++) {
+            let s2 = stars[j];
+            let d = Math.hypot(s.x - s2.x, s.y - s2.y);
+            if(d < 150) {
+                ctx.beginPath();
+                ctx.moveTo(s.x, s.y);
+                ctx.lineTo(s2.x, s2.y);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.2 * (1 - d/150)})`;
+                ctx.lineWidth = 0.6;
+                ctx.stroke();
+            }
+        }
+    }
+    requestAnimationFrame(animateStars);
+}
+window.addEventListener('resize', initCanvas);
+initCanvas();
+animateStars();
+
 document.getElementById('loginForm').addEventListener('submit',function(){
     var b=document.getElementById('loginBtn');
     b.innerHTML='<span class="spinner-border spinner-border-sm me-2"></span>Signing in...';

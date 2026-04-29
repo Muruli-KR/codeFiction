@@ -1,0 +1,608 @@
+{% extends 'results/base.html' %}
+
+{% block title %}Dashboard — Advanced Result Analytics{% endblock %}
+
+{% block content %}
+{% if not analytics %}
+<div class="glass-card mt-4 fade-up">
+    <div class="empty-state">
+        <i class="bi bi-bar-chart"></i>
+        <h4>No Analytics Data Available</h4>
+        <p>Please upload a student results file to generate analytics.</p>
+        {% if role == 'admin' or role == 'teacher' %}
+        <a href="/upload/" class="btn-grad mt-3">Upload Data</a>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+
+<!-- Header Stats -->
+<div class="d-flex align-items-center justify-content-between mb-4 fade-up">
+    <div>
+        <h3 style="font-weight: 800; letter-spacing: -0.5px;">Analytics Overview</h3>
+        <p class="mb-0" style="font-size: 0.9rem; color: #94a3b8;">Comprehensive analysis of student performance</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        <form method="get" id="filterForm" class="d-flex align-items-center gap-2 me-2">
+            <select name="file" class="form-select form-select-sm bg-dark text-white border-secondary" style="background-color: rgba(0,0,0,0.5);" onchange="document.getElementById('filterForm').submit();">
+                <option value="all" {% if not selected_file %}selected{% endif %}>All Files</option>
+                {% for f in source_files %}
+                <option value="{{ f }}" {% if selected_file == f %}selected{% endif %}>{{ f }}</option>
+                {% endfor %}
+            </select>
+            <select name="subject" class="form-select form-select-sm bg-dark text-white border-secondary" style="background-color: rgba(0,0,0,0.5);" onchange="document.getElementById('filterForm').submit();">
+                <option value="all" {% if not selected_subject %}selected{% endif %}>All Subjects</option>
+                {% for s in analytics.all_subjects %}
+                <option value="{{ s }}" {% if selected_subject == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        
+        <form method="post" action="{% url 'delete_file' %}" class="m-0 p-0 d-inline" onsubmit="return confirm('Are you sure you want to delete data for {{ selected_file|default:"ALL FILES" }}? This cannot be undone.');">
+            {% csrf_token %}
+            <input type="hidden" name="file_to_delete" value="{{ selected_file|default:'all' }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Selected File Data"><i class="bi bi-trash"></i></button>
+        </form>
+
+        <a href="/export-nba/" class="btn btn-sm btn-outline-success"><i class="bi bi-award"></i> NBA-SAR</a>
+        <a href="/export/" class="btn btn-sm btn-outline-custom"><i class="bi bi-filetype-csv"></i> CSV</a>
+        <a href="/export-pdf/" class="btn btn-sm btn-outline-custom"><i class="bi bi-filetype-pdf"></i> PDF</a>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-pills mb-4 fade-up" id="dashboardTabs" role="tablist" style="background: rgba(255,255,255,0.05); padding: 5px; border-radius: 12px; display: inline-flex;">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active rounded-pill text-white" id="marks-tab" data-bs-toggle="pill" data-bs-target="#marks-view" type="button" role="tab" style="padding: 8px 24px; font-weight: 500;">Marks View</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link rounded-pill text-white" id="rank-tab" data-bs-toggle="pill" data-bs-target="#rank-view" type="button" role="tab" style="padding: 8px 24px; font-weight: 500;">Rank View</button>
+  </li>
+</ul>
+
+<div class="tab-content" id="dashboardTabsContent">
+    <!-- ══ SUBJECT FILTER BAR ══ -->
+    <div class="glass-card p-3 mb-4 fade-up-2" style="border:1px solid rgba(99,102,241,0.25);">
+        <!-- Row 1: Numeric subject codes → Marks Analysis -->
+        {% if analytics.numeric_subjects %}
+        <div class="mb-2">
+            <span style="font-size:0.72rem;font-weight:700;color:#818cf8;letter-spacing:.08em;text-transform:uppercase;">
+                <i class="bi bi-hash me-1"></i>Subject Codes — Marks Analysis
+            </span>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a href="?file={{ selected_file|default:'' }}&subject=all"
+               class="subject-pill {% if not selected_subject %}active{% endif %}">
+                <i class="bi bi-grid-fill me-1"></i> All Subjects
+            </a>
+            {% for s in analytics.numeric_subjects %}
+            <a href="?file={{ selected_file|default:'' }}&subject={{ s|urlencode }}"
+               class="subject-pill {% if selected_subject == s %}active{% endif %}">
+                {{ s }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Row 2: Word-based attributes → Graph only -->
+        {% if analytics.word_subjects %}
+        <div class="mb-2">
+            <span style="font-size:0.72rem;font-weight:700;color:#f59e0b;letter-spacing:.08em;text-transform:uppercase;">
+                <i class="bi bi-bar-chart-fill me-1"></i>Attributes — Graph Analysis Only
+            </span>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            {% for s in analytics.word_subjects %}
+            <a href="?file={{ selected_file|default:'' }}&subject={{ s|urlencode }}"
+               class="subject-pill word-pill {% if selected_subject == s %}active-word{% endif %}">
+                {{ s }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+<style>
+.subject-pill {
+    display:inline-flex;align-items:center;padding:5px 14px;border-radius:20px;
+    font-size:0.82rem;font-weight:500;background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);color:#94a3b8;text-decoration:none;
+    transition:all .2s;white-space:nowrap;
+}
+.subject-pill:hover{background:rgba(99,102,241,.2);border-color:rgba(99,102,241,.5);color:#c7d2fe;}
+.subject-pill.active{background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:transparent;color:#fff;box-shadow:0 2px 12px rgba(99,102,241,.4);}
+.word-pill{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.2);color:#d97706;}
+.word-pill:hover{background:rgba(245,158,11,.18);border-color:rgba(245,158,11,.5);color:#fcd34d;}
+.active-word{background:linear-gradient(135deg,#f59e0b,#d97706);border-color:transparent;color:#fff;box-shadow:0 2px 12px rgba(245,158,11,.4);}
+</style>
+
+{% if analytics.subject_mode and analytics.is_word_subject %}
+<!-- ══ WORD ATTRIBUTE — GRAPH ONLY VIEW ══ -->
+<div class="glass-card p-4 mb-4" style="border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.05);">
+    <div class="d-flex align-items-center gap-3 mb-1">
+        <i class="bi bi-bar-chart-fill" style="font-size:1.4rem;color:#f59e0b;"></i>
+        <div>
+            <div style="font-size:1.1rem;font-weight:700;">{{ analytics.selected_subject }}</div>
+            <div class="text-muted" style="font-size:.82rem;">Attribute distribution — graph analysis only</div>
+        </div>
+    </div>
+</div>
+<div class="row g-4 mb-4">
+    <div class="col-lg-6"><div class="glass-card p-4 h-100">
+        <div class="section-title"><i class="bi bi-bar-chart-steps"></i> Score Distribution — {{ analytics.selected_subject }}</div>
+        <div class="chart-wrap"><canvas id="scoreDistChart"></canvas></div>
+    </div></div>
+    <div class="col-lg-6"><div class="glass-card p-4 h-100">
+        <div class="section-title"><i class="bi bi-diagram-3"></i> Category Performance (SGPA)</div>
+        <div class="chart-wrap"><canvas id="catDistChart"></canvas></div>
+    </div></div>
+</div>
+
+{% elif analytics.subject_mode %}
+<!-- ══ NUMERIC SUBJECT — FULL MARKS VIEW ══ -->
+<div class="glass-card p-4 mb-4" style="border:1px solid rgba(99,102,241,0.35);background:rgba(99,102,241,0.06);">
+    <div class="d-flex align-items-center gap-3 mb-3">
+        <i class="bi bi-journal-bookmark-fill" style="font-size:1.5rem;color:#818cf8;"></i>
+        <div>
+            <div style="font-size:1.15rem;font-weight:700;">{{ analytics.selected_subject }}</div>
+            <div class="text-muted" style="font-size:0.82rem;">Subject-wise marks analysis</div>
+        </div>
+    </div>
+    <div class="row g-3">
+        <div class="col-sm-3"><div class="stat-card blue p-3">
+            <div class="stat-icon blue" style="width:30px;height:30px;"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-value" style="font-size:1.4rem;">{{ analytics.total_students }}</div>
+            <div class="stat-label">Enrolled</div>
+        </div></div>
+        <div class="col-sm-3"><div class="stat-card green p-3">
+            <div class="stat-icon green" style="width:30px;height:30px;"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="stat-value" style="font-size:1.4rem;">{{ analytics.pass_count }}</div>
+            <div class="stat-label">Passed</div>
+        </div></div>
+        <div class="col-sm-3"><div class="stat-card p-3" style="border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08);">
+            <div class="stat-icon" style="width:30px;height:30px;background:rgba(239,68,68,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-x-circle-fill" style="color:#ef4444;"></i></div>
+            <div class="stat-value" style="font-size:1.4rem;color:#ef4444;">{{ analytics.fail_count }}</div>
+            <div class="stat-label">Failed</div>
+        </div></div>
+        <div class="col-sm-3"><div class="stat-card yellow p-3">
+            <div class="stat-icon yellow" style="width:30px;height:30px;"><i class="bi bi-percent"></i></div>
+            <div class="stat-value" style="font-size:1.4rem;">{{ analytics.pass_pct }}%</div>
+            <div class="stat-label">Pass Rate</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-7"><div class="glass-card p-4 h-100">
+        <div class="section-title">
+            <i class="bi bi-bar-chart-steps"></i> 
+            {% if analytics.is_word_subject %}Attribute Distribution{% else %}Score Distribution{% endif %} — {{ analytics.selected_subject }}
+        </div>
+        <div class="chart-wrap">
+            {% if analytics.is_word_subject %}
+                <canvas id="wordDistChart"></canvas>
+            {% else %}
+                <canvas id="scoreDistChart"></canvas>
+            {% endif %}
+        </div>
+    </div></div>
+    
+    {% if not analytics.is_word_subject %}
+    <div class="col-lg-5"><div class="glass-card p-4 h-100">
+        <div class="section-title"><i class="bi bi-trophy-fill"></i> {% if analytics.is_rank_data %}Top Ranks{% else %}Top Scorers{% endif %}</div>
+        <div class="table-container" style="max-height:280px;overflow-y:auto;">
+            <table class="table-dark-custom">
+                <thead><tr><th>Rank</th><th>Name</th><th>USN</th><th>Marks</th><th>Status</th></tr></thead>
+                <tbody>
+                {% for st in analytics.student_detail|slice:":10" %}
+                <tr>
+                    <td>{% if forloop.counter == 1 %}<span class="rank-1"><i class="bi bi-trophy-fill"></i> 1</span>{% elif forloop.counter == 2 %}<span class="rank-2">2</span>{% elif forloop.counter == 3 %}<span class="rank-3">3</span>{% else %}{{ st.rank }}{% endif %}</td>
+                    <td style="font-weight:500;">{{ st.name }}</td>
+                    <td style="font-size:.8rem;color:#94a3b8;">{{ st.usn }}</td>
+                    <td><strong style="color:var(--accent1);">{{ st.total }}</strong></td>
+                    <td>{% if analytics.is_rank_data %}-{% elif st.total >= 35 %}<span style="color:#10b981;font-size:.75rem;font-weight:600;">PASS</span>{% else %}<span style="color:#ef4444;font-size:.75rem;font-weight:600;">FAIL</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div></div>
+    {% endif %}
+</div>
+
+<div class="glass-card p-4 mb-4">
+    <div class="section-title"><i class="bi bi-table"></i> {{ analytics.selected_subject }} — All Enrolled Students</div>
+    <div class="table-container" style="max-height:500px;overflow-y:auto;">
+        <table class="table-dark-custom">
+            <thead><tr><th>Rank</th><th>USN</th><th>Student Name</th><th>Gender</th><th>Category</th><th>SGPA</th><th>Value</th>{% if not analytics.is_word_subject and not analytics.is_rank_data %}<th>Status</th>{% endif %}</tr></thead>
+            <tbody>
+            {% for st in analytics.student_detail %}
+            <tr>
+                <td>{% if forloop.counter == 1 %}<span class="rank-1"><i class="bi bi-trophy-fill"></i> 1</span>{% elif forloop.counter == 2 %}<span class="rank-2">2</span>{% elif forloop.counter == 3 %}<span class="rank-3">3</span>{% else %}{{ st.rank }}{% endif %}</td>
+                <td style="font-size:.82rem;color:#94a3b8;">{{ st.usn }}</td>
+                <td style="font-weight:500;">{{ st.name }}</td>
+                <td>{{ st.gender }}</td>
+                <td>{{ st.category }}</td>
+                <td>{{ st.sgpa }}</td>
+                <td><strong style="color:var(--accent1);">{% for m in st.sub_marks %}{{ m }}{% endfor %}</strong></td>
+                {% if not analytics.is_word_subject and not analytics.is_rank_data %}
+                <td>{% with m=st.sub_marks|first %}{% if m != '-' and m >= 35 %}<span style="background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);padding:2px 10px;border-radius:20px;font-size:.75rem;font-weight:600;">PASS</span>{% else %}<span style="background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.3);padding:2px 10px;border-radius:20px;font-size:.75rem;font-weight:600;">FAIL</span>{% endif %}{% endwith %}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if analytics.backlogs %}
+<div class="glass-card p-4 mb-4">
+    <div class="section-title"><i class="bi bi-journal-x"></i> Backlogs — {{ analytics.selected_subject }}</div>
+    <div class="table-container" style="max-height:250px;overflow-y:auto;">
+        <table class="table-dark-custom">
+            <thead><tr><th>Student Name</th><th>USN</th><th>Subject</th><th>Semester</th></tr></thead>
+            <tbody>
+            {% for b in analytics.backlogs %}
+            <tr>
+                <td style="font-weight:500;">{{ b.student__name }}</td>
+                <td>{{ b.student__usn }}</td>
+                <td style="color:#f87171;">{{ b.subject }}</td>
+                <td>{{ b.semester }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+
+{% else %}
+
+<div class="row g-4 mb-4">
+<div class="row g-4 mb-4">
+    <div class="col-md-2 col-sm-6"><div class="stat-card blue h-100 p-3">
+        <div class="stat-icon blue" style="width:36px;height:36px;"><i class="bi bi-people-fill"></i></div>
+        <div class="stat-value" style="font-size:1.5rem;">{{ analytics.total_students }}</div>
+        <div class="stat-label">Students</div>
+    </div></div>
+    <div class="col-md-2 col-sm-6"><div class="stat-card green h-100 p-3">
+        <div class="stat-icon green" style="width:36px;height:36px;"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="stat-value" style="font-size:1.5rem;">{{ analytics.pass_pct }}%</div>
+        <div class="stat-label">Pass %</div>
+    </div></div>
+    <div class="col-md-2 col-sm-6"><div class="stat-card purple h-100 p-3">
+        <div class="stat-icon purple" style="width:36px;height:36px;"><i class="bi bi-bullseye"></i></div>
+        <div class="stat-value" style="font-size:1.5rem;">{{ analytics.nba_si }}</div>
+        <div class="stat-label">Success Index</div>
+    </div></div>
+    <div class="col-md-2 col-sm-6"><div class="stat-card yellow h-100 p-3">
+        <div class="stat-icon yellow" style="width:36px;height:36px;"><i class="bi bi-star"></i></div>
+        <div class="stat-value" style="font-size:1.5rem;">{{ analytics.mean_sgpa }}</div>
+        <div class="stat-label">Mean SGPA</div>
+    </div></div>
+    <div class="col-md-4 col-sm-12"><div class="stat-card cyan h-100 p-3">
+        <div class="stat-icon cyan" style="width:36px;height:36px;"><i class="bi bi-award"></i></div>
+        <div class="stat-value" style="font-size:1.5rem;">{{ analytics.nba_api }}</div>
+        <div class="stat-label">Academic Performance Index (API)</div>
+    </div></div>
+</div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6"><div class="glass-card p-4 h-100">
+        <div class="section-title"><i class="bi bi-bar-chart-steps"></i> Score Distribution (All Subjects)</div>
+        <div class="chart-wrap"><canvas id="scoreDistChart"></canvas></div>
+    </div></div>
+    <div class="col-lg-6"><div class="glass-card p-4 h-100">
+        <div class="section-title"><i class="bi bi-diagram-3"></i> Category Performance (SGPA)</div>
+        <div class="chart-wrap"><canvas id="catDistChart"></canvas></div>
+    </div></div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-12"><div class="glass-card p-4">
+        <div class="section-title"><i class="bi bi-journal-x"></i> Backlog Tracking</div>
+        <div class="table-container" style="max-height:300px;overflow-y:auto;">
+            <table class="table-dark-custom">
+                <thead><tr><th>Student Name</th><th>USN</th><th>Subject</th><th>Semester</th></tr></thead>
+                <tbody>
+                {% for b in analytics.backlogs %}
+                <tr>
+                    <td style="font-weight:500;">{{ b.student__name }}</td>
+                    <td>{{ b.student__usn }}</td>
+                    <td style="color:#f87171;">{{ b.subject }}</td>
+                    <td>{{ b.semester }}</td>
+                </tr>
+                {% empty %}<tr><td colspan="4" class="text-center text-muted">No backlogs recorded.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div></div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-12"><div class="glass-card p-4">
+        <div class="section-title"><i class="bi bi-table"></i> Comprehensive Student Data</div>
+        <div class="table-container" style="max-height:450px;overflow-y:auto; overflow-x:auto;">
+            <table class="table-dark-custom" style="white-space: nowrap;">
+                <thead>
+                    <tr>
+                        <th>Rank</th><th>USN</th><th>Student Name</th><th>SGPA</th>
+                        {% for sub in analytics.display_subjects %}<th>{{ sub }}</th>{% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                {% for st in analytics.student_detail %}
+                <tr>
+                    <td>{% if forloop.counter == 1 %}<span class="rank-1"><i class="bi bi-trophy-fill"></i> 1</span>{% elif forloop.counter == 2 %}<span class="rank-2">2</span>{% elif forloop.counter == 3 %}<span class="rank-3">3</span>{% else %}{{ st.rank }}{% endif %}</td>
+                    <td style="font-size:0.82rem;color:#94a3b8;">{{ st.usn }}</td>
+                    <td style="font-weight:500;">{{ st.name }}</td>
+                    <td>{{ st.sgpa }}</td>
+                    {% for mark in st.sub_marks %}<td>{{ mark }}</td>{% endfor %}
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div></div>
+</div>
+
+{% if analytics.course_analysis %}
+<div class="row g-4 mb-4 fade-up">
+    <div class="col-12"><div class="glass-card p-4">
+        <div class="section-title"><i class="bi bi-bar-chart-fill"></i> Course-wise Performance Analysis</div>
+        <div class="chart-wrap"><canvas id="courseWiseChart"></canvas></div>
+    </div></div>
+</div>
+{% endif %}
+{% endif %}
+
+    </div> <!-- END MARKS VIEW TAB -->
+    
+    
+    <!-- RANK VIEW TAB -->
+    <div class="tab-pane fade" id="rank-view" role="tabpanel">
+        <div class="glass-card p-4">
+            <div class="section-title"><i class="bi bi-graph-up"></i> Student Rank Analysis</div>
+            <p class="text-muted mb-4">Displays overall student ranks. A lower numerical rank (e.g., Rank 1) is better and positioned higher on the chart.</p>
+            <div class="chart-wrap" style="height: 500px;">
+                <canvas id="rankLineChart"></canvas>
+            </div>
+        </div>
+    </div> <!-- END RANK VIEW TAB -->
+</div> <!-- END TABS CONTENT -->
+
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if analytics %}
+{{ analytics.score_dist|json_script:"scoreDistJSON" }}
+{{ analytics.word_dist|json_script:"wordDistJSON" }}
+{{ analytics.cat_metrics|json_script:"catMetricsJSON" }}
+{{ analytics.student_detail|json_script:"studentDetailJSON" }}
+{% if analytics.course_analysis %}{{ analytics.course_analysis|json_script:"courseAnalysisJSON" }}{% endif %}
+
+<script>
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = 'Inter';
+
+    // 1. Score/Rank Distribution Chart
+    const scoreCtx = document.getElementById('scoreDistChart');
+    if (scoreCtx) {
+        const scoreData = JSON.parse(document.getElementById('scoreDistJSON').textContent);
+        new Chart(scoreCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(scoreData),
+                datasets: [{
+                    label: 'Number of Students',
+                    data: Object.values(scoreData),
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // 1.5 Word Distribution Chart (for text attributes like Domicile Place, etc.)
+    const wordCtx = document.getElementById('wordDistChart');
+    if (wordCtx) {
+        const wordData = JSON.parse(document.getElementById('wordDistJSON').textContent);
+        
+        // Generate dynamic colors based on number of categories
+        const colors = [
+            'rgba(16, 185, 129, 0.8)', // Emerald
+            'rgba(59, 130, 246, 0.8)', // Blue
+            'rgba(139, 92, 246, 0.8)', // Purple
+            'rgba(245, 158, 11, 0.8)', // Amber
+            'rgba(239, 68, 68, 0.8)',  // Red
+            'rgba(14, 165, 233, 0.8)', // Sky
+            'rgba(236, 72, 153, 0.8)'  // Pink
+        ];
+        
+        const backgroundColors = Object.keys(wordData).map((_, i) => colors[i % colors.length]);
+
+        new Chart(wordCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(wordData),
+                datasets: [{
+                    data: Object.values(wordData),
+                    backgroundColor: backgroundColors,
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#e2e8f0', padding: 20 }
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+    }
+
+    // 2. Category Performance Chart (SGPA)
+    const catCtx = document.getElementById('catDistChart');
+    if (catCtx) {
+        const catData = JSON.parse(document.getElementById('catMetricsJSON').textContent);
+        const labels = Object.keys(catData);
+        const sgpaVals = labels.map(l => catData[l].avg_sgpa);
+        const passVals = labels.map(l => catData[l].pass_pct);
+
+        new Chart(catCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Avg SGPA',
+                        data: sgpaVals,
+                        backgroundColor: 'rgba(139, 92, 246, 0.8)',
+                        borderRadius: 6,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Pass %',
+                        data: passVals,
+                        type: 'line',
+                        borderColor: '#10b981',
+                        borderWidth: 2,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { type: 'linear', position: 'left', beginAtZero: true, max: 10, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y1: { type: 'linear', position: 'right', beginAtZero: true, max: 100, grid: { display: false } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // 4. Course-wise Analysis Chart
+    const courseCtx = document.getElementById('courseWiseChart');
+    if (courseCtx && document.getElementById('courseAnalysisJSON')) {
+        const courseData = JSON.parse(document.getElementById('courseAnalysisJSON').textContent);
+        const subjects = Object.keys(courseData);
+        
+        new Chart(courseCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: subjects,
+                datasets: [
+                    {
+                        label: 'Pass %',
+                        data: subjects.map(s => courseData[s].pass_pct),
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderRadius: 4
+                    },
+                    {
+                        label: '50-59',
+                        data: subjects.map(s => courseData[s].d_50_59),
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderRadius: 4
+                    },
+                    {
+                        label: '60-69',
+                        data: subjects.map(s => courseData[s].d_60_69),
+                        backgroundColor: 'rgba(139, 92, 246, 0.7)',
+                        borderRadius: 4
+                    },
+                    {
+                        label: '>=70',
+                        data: subjects.map(s => courseData[s].d_ge_70),
+                        backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: true, position: 'top' },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // 3. Rank Line Chart
+    const rankCtx = document.getElementById('rankLineChart');
+    if (rankCtx) {
+        const stData = JSON.parse(document.getElementById('studentDetailJSON').textContent);
+        
+        // Take top 50 to avoid clutter
+        const top50 = stData.slice(0, 50);
+        const rankLabels = top50.map(s => s.name);
+        const rankVals = top50.map(s => s.rank);
+
+        new Chart(rankCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: rankLabels,
+                datasets: [{
+                    label: 'Student Rank',
+                    data: rankVals,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        reverse: true, // Lowest rank (1) at top
+                        beginAtZero: false,
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    },
+                    x: {
+                        ticks: { display: false },
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Rank: ' + context.parsed.y;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endif %}
+{% endblock %}

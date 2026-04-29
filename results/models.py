@@ -18,28 +18,15 @@ class Profile(models.Model):
 
 
 class Student(models.Model):
-    GENDER_CHOICES = [
-        ('Male', 'Male'),
-        ('Female', 'Female'),
-        ('Other', 'Other'),
-    ]
-    CATEGORY_CHOICES = [
-        ('General', 'General'),
-        ('OBC', 'OBC'),
-        ('SC', 'SC'),
-        ('ST', 'ST'),
-        ('EWS', 'EWS'),
-    ]
-    QUOTA_CHOICES = [
-        ('CET', 'CET'),
-        ('COMEDK', 'COMEDK'),
-        ('Management', 'Management'),
-    ]
+    usn = models.CharField(max_length=50, blank=True, null=True)
 
     name = models.CharField(max_length=200)
-    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='Male')
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='General')
-    quota = models.CharField(max_length=20, choices=QUOTA_CHOICES, default='CET')
+    gender = models.CharField(max_length=20, default='Unknown')
+    category = models.CharField(max_length=50, default='Unknown')  # raw value from file e.g. GM, 2A, SC
+    quota = models.CharField(max_length=50, default='Unknown')     # raw value from file e.g. CET, COMEDK
+    semester = models.CharField(max_length=20, default='1')
+    sgpa = models.FloatField(default=0.0)
+    source_file = models.CharField(max_length=255, default='Unknown')
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -54,10 +41,19 @@ class Result(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='results')
     subject = models.CharField(max_length=100)
     marks = models.FloatField(default=0)
+    text_value = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return f"{self.student.name} - {self.subject}: {self.marks}"
 
     @property
     def passed(self):
-        return self.marks >= 40
+        return self.marks >= 35
+
+class Backlog(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='backlogs')
+    subject = models.CharField(max_length=100)
+    semester = models.CharField(max_length=20)
+    
+    def __str__(self):
+        return f"{self.student.name} - {self.subject} ({self.semester})"

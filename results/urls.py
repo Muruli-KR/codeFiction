@@ -10,4 +10,6 @@ urlpatterns = [
     path('upload/', views.upload_view, name='upload'),
     path('export/', views.export_csv_view, name='export_csv'),
     path('export-pdf/', views.export_pdf_view, name='export_pdf'),
+    path('export-nba/', views.export_nba_view, name='export_nba'),
+    path('delete-file/', views.delete_file_view, name='delete_file'),
 ]

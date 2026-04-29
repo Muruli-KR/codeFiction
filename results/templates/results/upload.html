@@ -1,0 +1,54 @@
+{% extends 'results/base.html' %}
+
+{% block title %}Upload Data — Advanced Result Analytics{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="fade-up mb-4 text-center">
+            <h3 style="font-weight: 800; letter-spacing: -0.5px;">Upload Student Results</h3>
+            <p class="text-muted mb-0" style="font-size: 0.9rem;">Import CSV or Excel files containing student performance data</p>
+        </div>
+
+        <div class="glass-card p-4 fade-up-2">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="form-label text-uppercase text-muted" style="font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px;">
+                        Select File
+                    </label>
+                    <div class="d-flex flex-column gap-2">
+                        <input type="file" name="file" class="form-control-custom form-control" accept=".csv,.xlsx,.xls" multiple required>
+                        {% if error_msg %}
+                        <div class="text-danger mt-1" style="font-size: 0.8rem;">
+                            {{ error_msg }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-grad w-100 justify-content-center py-3" style="font-size: 1rem;">
+                    <i class="bi bi-cloud-arrow-up-fill" style="font-size: 1.2rem;"></i> Process and Import Data
+                </button>
+            </form>
+
+            <div class="mt-4 pt-3" style="border-top: 1px solid var(--border);">
+                <div class="section-title" style="font-size: 0.85rem;"><i class="bi bi-info-circle"></i> File Requirements</div>
+                <ul class="text-muted" style="font-size: 0.8rem; line-height: 1.6; padding-left: 1.2rem;">
+                    <li>Formats supported: <strong style="color:var(--text-main)">.csv, .xls, .xlsx</strong></li>
+                    <li>Must contain a column named <strong style="color:var(--text-main)">Student Name</strong>.</li>
+                    <li>Optional demographic columns: <strong>Gender, Category, Quota</strong>.</li>
+                    <li>All other columns will be treated as <strong>Subject Marks</strong>.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add custom class to file input
+    document.querySelectorAll('input[type="file"]').forEach(el => {
+        el.classList.add('form-control-custom');
+    });
+</script>
+{% endblock %}
