@@ -204,8 +204,11 @@ def compute_analytics(selected_file=None, selected_subject=None):
     max_mark = df['marks'].max() if not df['marks'].empty else 0
     is_rank_data = max_mark > 1000
 
-    # Rank per student based on current view (Lowest total = highest rank as per request)
-    student_totals = df.groupby(['name', 'usn'])['marks'].sum().round(2).reset_index()
+    # Rank per student based on current view
+    student_totals = df.groupby(['name', 'usn']).agg(
+        marks=('marks', 'sum'),
+        sgpa=('sgpa', 'first')
+    ).round(2).reset_index()
     
     if is_rank_data:
         # Find the rank column to sort by exactly its value, bypassing sums of other dirty numeric fields
@@ -222,8 +225,12 @@ def compute_analytics(selected_file=None, selected_subject=None):
             student_totals = student_totals.sort_values(by='sort_val', ascending=True).reset_index(drop=True)
             student_totals = student_totals.drop(columns=['sort_val'])
     else:
-        # For marks, highest is best
-        student_totals = student_totals.sort_values(by='marks', ascending=False).reset_index(drop=True)
+        if not subject_mode:
+            # Overall Top Scorers sorted by SGPA
+            student_totals = student_totals.sort_values(by=['sgpa', 'marks'], ascending=[False, False]).reset_index(drop=True)
+        else:
+            # Subject-specific Top Scorers sorted by Marks
+            student_totals = student_totals.sort_values(by=['marks', 'sgpa'], ascending=[False, False]).reset_index(drop=True)
         
     student_totals['rank'] = student_totals.index + 1
     rank_dict = student_totals.set_index('usn')['rank'].to_dict()
@@ -239,6 +246,14 @@ def compute_analytics(selected_file=None, selected_subject=None):
     fail_count = int((~df['passed']).sum())
     total_results = pass_count + fail_count if subject_mode else len(df)
     pass_pct = round(pass_count / total_results * 100, 2) if total_results else 0
+
+    if not subject_mode:
+        student_pass_status = df.groupby('usn')['passed'].all()
+        overall_student_pass_count = int(student_pass_status.sum())
+        overall_student_fail_count = len(student_pass_status) - overall_student_pass_count
+    else:
+        overall_student_pass_count = pass_count
+        overall_student_fail_count = fail_count
 
     course_analysis = {}
     if not subject_mode:
@@ -327,7 +342,7 @@ def compute_analytics(selected_file=None, selected_subject=None):
         pivot_df = df.pivot_table(index=['usn', 'name'], columns='subject', values='display_value', aggfunc='first').reset_index()
         std_df = df.groupby(['name', 'usn', 'sgpa', 'rank'])['marks'].agg(['sum', 'mean', 'count']).round(2).reset_index()
         std_df.columns = ['name', 'usn', 'sgpa', 'rank', 'total', 'average', 'num_subjects']
-        std_df = pd.merge(std_df, pivot_df, on=['usn', 'name'], how='left').sort_values('rank')
+        std_df = pd.merge(std_df, pivot_df, on=['usn', 'name'], how='left').sort_values('sgpa', ascending=False)
         student_detail = std_df.to_dict('records')
         for st in student_detail:
             st['sub_marks'] = []
@@ -369,6 +384,8 @@ def compute_analytics(selected_file=None, selected_subject=None):
         'course_analysis': course_analysis,
         'score_dist': score_dist,
         'cat_metrics': cat_metrics,
+        'overall_student_pass_count': overall_student_pass_count,
+        'overall_student_fail_count': overall_student_fail_count,
         'nba_si': round(si, 2),
         'nba_api': api,
         'mean_sgpa': mean_sgpa,
@@ -583,8 +600,9 @@ def export_pdf_view(request):
         elements.append(Paragraph("No data available. Please upload student results first.", styles['Normal']))
 
     doc.build(elements)
-    buffer.seek(0)
-    response = HttpResponse(buffer, content_type='application/pdf')
+    pdf_value = buffer.getvalue()
+    buffer.close()
+    response = HttpResponse(pdf_value, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="analytics_report.pdf"'
     return response
 
@@ -616,7 +634,6 @@ def export_nba_view(request):
     writer.writerow(['Total Students', analytics['total_students']])
     writer.writerow(['Success Index (SI)', analytics['nba_si']])
     writer.writerow(['Mean SGPA', analytics['mean_sgpa']])
-    writer.writerow(['Academic Performance Index (API)', analytics['nba_api']])
     writer.writerow([])
     
     writer.writerow(['Category Performance'])

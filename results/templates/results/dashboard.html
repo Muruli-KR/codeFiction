@@ -50,17 +50,7 @@
     </div>
 </div>
 
-<!-- Tabs -->
-<ul class="nav nav-pills mb-4 fade-up" id="dashboardTabs" role="tablist" style="background: rgba(255,255,255,0.05); padding: 5px; border-radius: 12px; display: inline-flex;">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active rounded-pill text-white" id="marks-tab" data-bs-toggle="pill" data-bs-target="#marks-view" type="button" role="tab" style="padding: 8px 24px; font-weight: 500;">Marks View</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link rounded-pill text-white" id="rank-tab" data-bs-toggle="pill" data-bs-target="#rank-view" type="button" role="tab" style="padding: 8px 24px; font-weight: 500;">Rank View</button>
-  </li>
-</ul>
 
-<div class="tab-content" id="dashboardTabsContent">
     <!-- ══ SUBJECT FILTER BAR ══ -->
     <div class="glass-card p-3 mb-4 fade-up-2" style="border:1px solid rgba(99,102,241,0.25);">
         <!-- Row 1: Numeric subject codes → Marks Analysis -->
@@ -214,15 +204,13 @@
     <div class="section-title"><i class="bi bi-table"></i> {{ analytics.selected_subject }} — All Enrolled Students</div>
     <div class="table-container" style="max-height:500px;overflow-y:auto;">
         <table class="table-dark-custom">
-            <thead><tr><th>Rank</th><th>USN</th><th>Student Name</th><th>Gender</th><th>Category</th><th>SGPA</th><th>Value</th>{% if not analytics.is_word_subject and not analytics.is_rank_data %}<th>Status</th>{% endif %}</tr></thead>
+            <thead><tr><th>Rank</th><th>USN</th><th>Student Name</th><th>SGPA</th><th>Marks</th>{% if not analytics.is_word_subject and not analytics.is_rank_data %}<th>Status</th>{% endif %}</tr></thead>
             <tbody>
             {% for st in analytics.student_detail %}
             <tr>
                 <td>{% if forloop.counter == 1 %}<span class="rank-1"><i class="bi bi-trophy-fill"></i> 1</span>{% elif forloop.counter == 2 %}<span class="rank-2">2</span>{% elif forloop.counter == 3 %}<span class="rank-3">3</span>{% else %}{{ st.rank }}{% endif %}</td>
                 <td style="font-size:.82rem;color:#94a3b8;">{{ st.usn }}</td>
                 <td style="font-weight:500;">{{ st.name }}</td>
-                <td>{{ st.gender }}</td>
-                <td>{{ st.category }}</td>
                 <td>{{ st.sgpa }}</td>
                 <td><strong style="color:var(--accent1);">{% for m in st.sub_marks %}{{ m }}{% endfor %}</strong></td>
                 {% if not analytics.is_word_subject and not analytics.is_rank_data %}
@@ -259,34 +247,40 @@
 
 {% else %}
 
-<div class="row g-4 mb-4">
-<div class="row g-4 mb-4">
-    <div class="col-md-2 col-sm-6"><div class="stat-card blue h-100 p-3">
-        <div class="stat-icon blue" style="width:36px;height:36px;"><i class="bi bi-people-fill"></i></div>
-        <div class="stat-value" style="font-size:1.5rem;">{{ analytics.total_students }}</div>
+<div class="row g-3 mb-3">
+    <div class="col-sm-3"><div class="stat-card blue p-3 h-100">
+        <div class="stat-icon blue" style="width:30px;height:30px;"><i class="bi bi-people-fill"></i></div>
+        <div class="stat-value" style="font-size:1.4rem;">{{ analytics.total_students }}</div>
         <div class="stat-label">Students</div>
     </div></div>
-    <div class="col-md-2 col-sm-6"><div class="stat-card green h-100 p-3">
-        <div class="stat-icon green" style="width:36px;height:36px;"><i class="bi bi-graph-up-arrow"></i></div>
-        <div class="stat-value" style="font-size:1.5rem;">{{ analytics.pass_pct }}%</div>
-        <div class="stat-label">Pass %</div>
+    <div class="col-sm-3"><div class="stat-card green p-3 h-100">
+        <div class="stat-icon green" style="width:30px;height:30px;"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="stat-value" style="font-size:1.4rem;">{{ analytics.overall_student_pass_count }}</div>
+        <div class="stat-label">Passed All</div>
     </div></div>
-    <div class="col-md-2 col-sm-6"><div class="stat-card purple h-100 p-3">
-        <div class="stat-icon purple" style="width:36px;height:36px;"><i class="bi bi-bullseye"></i></div>
-        <div class="stat-value" style="font-size:1.5rem;">{{ analytics.nba_si }}</div>
-        <div class="stat-label">Success Index</div>
+    <div class="col-sm-3"><div class="stat-card p-3 h-100" style="border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08);">
+        <div class="stat-icon" style="width:30px;height:30px;background:rgba(239,68,68,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-x-circle-fill" style="color:#ef4444;"></i></div>
+        <div class="stat-value" style="font-size:1.4rem;color:#ef4444;">{{ analytics.overall_student_fail_count }}</div>
+        <div class="stat-label">Failed</div>
     </div></div>
-    <div class="col-md-2 col-sm-6"><div class="stat-card yellow h-100 p-3">
-        <div class="stat-icon yellow" style="width:36px;height:36px;"><i class="bi bi-star"></i></div>
-        <div class="stat-value" style="font-size:1.5rem;">{{ analytics.mean_sgpa }}</div>
-        <div class="stat-label">Mean SGPA</div>
-    </div></div>
-    <div class="col-md-4 col-sm-12"><div class="stat-card cyan h-100 p-3">
-        <div class="stat-icon cyan" style="width:36px;height:36px;"><i class="bi bi-award"></i></div>
-        <div class="stat-value" style="font-size:1.5rem;">{{ analytics.nba_api }}</div>
-        <div class="stat-label">Academic Performance Index (API)</div>
+    <div class="col-sm-3"><div class="stat-card yellow p-3 h-100">
+        <div class="stat-icon yellow" style="width:30px;height:30px;"><i class="bi bi-percent"></i></div>
+        <div class="stat-value" style="font-size:1.4rem;">{{ analytics.pass_pct }}%</div>
+        <div class="stat-label">Overall Pass Rate</div>
     </div></div>
 </div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6"><div class="stat-card yellow p-3 h-100">
+        <div class="stat-icon yellow" style="width:30px;height:30px;"><i class="bi bi-star"></i></div>
+        <div class="stat-value" style="font-size:1.4rem;">{{ analytics.mean_sgpa }}</div>
+        <div class="stat-label">Mean SGPA</div>
+    </div></div>
+    <div class="col-sm-6"><div class="stat-card purple p-3 h-100">
+        <div class="stat-icon purple" style="width:30px;height:30px;"><i class="bi bi-bullseye"></i></div>
+        <div class="stat-value" style="font-size:1.4rem;">{{ analytics.nba_si }}</div>
+        <div class="stat-label">Success Index</div>
+    </div></div>
 </div>
 
 <div class="row g-4 mb-4">
@@ -301,7 +295,25 @@
 </div>
 
 <div class="row g-4 mb-4">
-    <div class="col-lg-12"><div class="glass-card p-4">
+    <div class="col-lg-6"><div class="glass-card p-4 h-100">
+        <div class="section-title"><i class="bi bi-trophy-fill"></i> Overall Top Scorers</div>
+        <div class="table-container" style="max-height:300px;overflow-y:auto;">
+            <table class="table-dark-custom">
+                <thead><tr><th>Rank</th><th>Name</th><th>USN</th><th>SGPA</th></tr></thead>
+                <tbody>
+                {% for st in analytics.top_10 %}
+                <tr>
+                    <td>{% if forloop.counter == 1 %}<span class="rank-1"><i class="bi bi-trophy-fill"></i> 1</span>{% elif forloop.counter == 2 %}<span class="rank-2">2</span>{% elif forloop.counter == 3 %}<span class="rank-3">3</span>{% else %}{{ st.rank }}{% endif %}</td>
+                    <td style="font-weight:500;">{{ st.name }}</td>
+                    <td style="font-size:.8rem;color:#94a3b8;">{{ st.usn }}</td>
+                    <td><strong style="color:var(--accent1);">{{ st.sgpa }}</strong></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div></div>
+    <div class="col-lg-6"><div class="glass-card p-4">
         <div class="section-title"><i class="bi bi-journal-x"></i> Backlog Tracking</div>
         <div class="table-container" style="max-height:300px;overflow-y:auto;">
             <table class="table-dark-custom">
@@ -359,20 +371,7 @@
 {% endif %}
 {% endif %}
 
-    </div> <!-- END MARKS VIEW TAB -->
-    
-    
-    <!-- RANK VIEW TAB -->
-    <div class="tab-pane fade" id="rank-view" role="tabpanel">
-        <div class="glass-card p-4">
-            <div class="section-title"><i class="bi bi-graph-up"></i> Student Rank Analysis</div>
-            <p class="text-muted mb-4">Displays overall student ranks. A lower numerical rank (e.g., Rank 1) is better and positioned higher on the chart.</p>
-            <div class="chart-wrap" style="height: 500px;">
-                <canvas id="rankLineChart"></canvas>
-            </div>
-        </div>
-    </div> <!-- END RANK VIEW TAB -->
-</div> <!-- END TABS CONTENT -->
+
 
 {% endif %}
 {% endblock %}
